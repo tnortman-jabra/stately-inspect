@@ -99,8 +99,8 @@ export function createInspector<TAdapter extends Adapter>(
       const sourceId = !info?.source
         ? undefined
         : typeof info.source === 'string'
-        ? info.source
-        : info.source.sessionId;
+          ? info.source
+          : info.source.sessionId;
       sendAdapter({
         type: '@xstate.event',
         sourceId,
@@ -145,7 +145,9 @@ export function createInspector<TAdapter extends Adapter>(
       adapter.stop?.();
     },
   };
-
+  if (options?.autoStart) {
+    inspector.start();
+  }
   return inspector;
 }
 
@@ -166,15 +168,15 @@ export function convertXStateEvent(
       const definitionString =
         typeof definitionObject === 'object'
           ? safeStringify(definitionObject, (_key, value) => {
-              if (typeof value === 'function') {
-                return { type: value.name };
-              }
+            if (typeof value === 'function') {
+              return { type: value.name };
+            }
 
-              return value;
-            })
+            return value;
+          })
           : safeStringify({
-              id: name,
-            });
+            id: name,
+          });
 
       return {
         name,

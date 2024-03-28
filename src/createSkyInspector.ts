@@ -11,11 +11,16 @@ import { isNode } from './utils';
 // Not the most elegant way to do this, but it makes it much easier to test local changes
 const isDevMode = false;
 
+type SkyInspectorOptions = {
+  apiKey?: string; // Not used yet, will be used to add additional features later
+  onerror?: (error: Error) => void;
+} & InspectorOptions & {
+  inspectorType?: 'node' | 'browser';
+  WebSocket?: typeof WebSocket;
+};
+
 export function createSkyInspector(
-  options: {
-    apiKey?: string; // Not used yet, will be used to add additional features later
-    onerror?: (error: Error) => void;
-  } & InspectorOptions = {}
+  options: SkyInspectorOptions = {}
 ): ReturnType<typeof inspectCreator> {
   const { host, apiBaseURL } = {
     host: isDevMode
@@ -29,10 +34,11 @@ export function createSkyInspector(
   const { apiKey, onerror, ...inspectorOptions } = options;
   const sessionId = uuidv4(); // Generate a unique session ID
   const room = `inspect-${sessionId}`;
+  const defaultWS = isNode ? require('isomorphic-ws') : undefined;
   const socket = new PartySocket({
     host,
     room,
-    WebSocket: isNode ? require('isomorphic-ws') : undefined,
+    WebSocket: inspectorOptions?.WebSocket ?? defaultWS,
   });
   const liveInspectUrl = `${server}/inspect/${sessionId}`;
   socket.onerror = onerror ?? console.error;
@@ -40,7 +46,7 @@ export function createSkyInspector(
     console.log('Connected to Sky, link to your live inspect session:');
     console.log(liveInspectUrl);
   };
-  if (isNode) {
+  if (inspectorOptions?.inspectorType === 'node' || isNode) {
     return inspectCreator({
       ...inspectorOptions,
       send(event) {
